@@ -45,4 +45,8 @@ strings and chars
 注意在某些函数内，字符串要手动确定添加结尾符号\0
 在汇编内，buff区则不用管理\0,因为通常使用字符串长度管理
 
+在Linux Assembly下，寻址有一个注意事项：
+如果使用 leaq offset(%rip),%rbx 可以直接编译
+如果使用 movq $offset, %rbx 则编译时可能需要 gcc --no-pie 来保证不报错
+
 
