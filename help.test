@@ -1,0 +1,71 @@
+
+基础操作：
+ffmpeg -i input.mp4 // information
+-formats // formats
+-codecs // code
+-filters // asname
+
+格式转换 转码 封装
+ffmpeg -i input.avi output.mp4
+ffmpeg -i input.avi -c copy output.mkv // just copy~~~~
+ffmpeg -i input.wav -b:a 192k output.mp3 // b:a biterate : audio
+
+剪切 粗剪和细剪
+ffmpeg -ss 00:01:00 -to 00:02:00 -i input -c copy output.mp4 // ss - to copy
+ffmpeg -ss 00:01:00 (-i input.mp4) -t 60 -c:v libx264 -c:a aac output.mp4 //libx264 for c:v aac for c:a -t till 60 frames
+ffmpeg -ss 00:01:00 -i input.mp4 -t 00:00:30 -c copy output.mp4
+
+画中画 叠加
+ffmpeg -i bg.mp4 -i fg.mp4 \ 这里先引入背景视频和前景视频
+ -filter_complex \ 复杂滤镜，或者说综合滤镜
+ " [1:v]scale=320:240[small]; [0:v][small]overlay=10:10 " \\ 
+ // 1:v 视频1的视频部分 scale缩放后 命名为small
+ // 视频0的视频部分 和前面[small]  overlay 叠加到 10：10位置 XY 这个滤镜显然是按照bg:fg的顺序
+
+output.mp4 //done
+
+音频处理部分
+
+ffmpeg -i in.mp4 -vn -c:a copy audio.acc // 这里只 code audio输出，c:a
+ffmpeg -i in.wav -af volume=2 out.wav //af audio-filter滤镜下的一些 比如volume音量
+ffmpeg -i in.wav -af afade=t=in:ss=0:d=3,afade=t=out:st=10:d=5 out.wav
+// afade=t=in:ss=0:d=3   从0秒开始3秒淡入 滤镜audid-fade type = in start-sec = 0 duration=3
+// afade=t=out:st=10:d=5 从10秒淡出用时5秒  这些该死的缩写 \
+
+ffmpeg -i bg.wav -i fg.wav -filter_complex amix=inputs=2 out.wav
+// amix 混合， inputs音轨数 2个 同理可以混合很多个
+
+ffmpeg -i ori.wav -ac 1 single.wav // -ac audio-channel =1
+
+最精彩的部分：录屏
+
+ffmpeg -f x11grab -video_size 1920x1080 -i :0.0 -c:v libx264 out.mp4
+// -f format 大概也是from源 -i 来源  cdoec:video libx264
+// :0.0 (:0 显示接口 .0第一个屏 如果程序员双屏工作 可以用:0.1来捕捉第二个分屏
+
+ffmpeg -f x11grab -video_size * -i :0.0 -f alsa(音频) -i default -c:v * -c:a * out.mp4
+// -f 音频来源 alsa是本地声卡default
+
+最奇葩的音频渐变
+
+ffmpeg -i bg.wav -i fg.wav -filter_complex\
+"
+[0:a]afade=t=out:st=5:d=3[a0];
+[1:a]afade=t=in:st=5:d=3[a1];
+[a0][a1]amix=inputs=2
+"
+output.wav
+
+// 毫无意义
+
+终端CLI下录屏
+ffmpeg -f fbdev (-framerate 10) -i /dev/fb0 out.avi //framerate是帧率 
+// fbdev frame-buffer-device /dev/fb0 
+
+关于声卡采集
+ffmpeg -f alsa -i hw:0,0 -t 10 result.mp3
+// -format alsa . -i hw:0,0 第一块声卡第一个设备 hard-ware -t 10秒
+ffmpeg -f pulse -i alsa_output.pci-0000_00_1b.0.analog-stereo.monitor -t 10 get.mp3
+// format pulse 
+// in ALSA OUTPUT PCI 0000 00 1B ANALOG STEREO MONITOR
+//
